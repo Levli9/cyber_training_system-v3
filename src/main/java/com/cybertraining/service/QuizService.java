@@ -1,14 +1,14 @@
 package com.cybertraining.service;
 
-import com.cybertraining.model.Question;
-
 import java.util.List;
+
+import com.cybertraining.model.Question;
 
 public class QuizService {
 
     private List<Question> questions;
     private int currentIndex = 0;
-    private int score = 0;
+    private int correctAnswers = 0;
 
     public QuizService(List<Question> questions) {
         this.questions = questions;
@@ -29,16 +29,20 @@ public class QuizService {
     }
 
     public void submitAnswer(int selectedIndex) {
-
         Question q = questions.get(currentIndex);
-
         if (q.isCorrect(selectedIndex)) {
-            score += 100 / questions.size();
+            correctAnswers++;
         }
     }
 
+    public void skipQuestion() {
+        // Just empty method logically if we needed any specific bookkeeping,
+        // but skipping just means we won't call submitAnswer before nextQuestion.
+    }
+
     public int getScore() {
-        return score;
+        if (questions.isEmpty()) return 0;
+        return (int) Math.round(((double) correctAnswers / questions.size()) * 100.0);
     }
 
     public int getCurrentIndex() {

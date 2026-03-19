@@ -5,11 +5,17 @@ public class Question {
     private String question;
     private String[] answers;
     private int correctIndex;
+    private String category;
 
-    public Question(String question, String[] answers, int correctIndex) {
+    public Question(String category, String question, String[] answers, int correctIndex) {
+        this.category = category;
         this.question = question;
         this.answers = answers;
         this.correctIndex = correctIndex;
+    }
+
+    public String getCategory() {
+        return category;
     }
 
     public String getQuestion() {
