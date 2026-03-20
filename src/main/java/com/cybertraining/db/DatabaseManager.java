@@ -1,151 +1,212 @@
 package com.cybertraining.db;
 
+import com.cybertraining.model.Course;
+import com.cybertraining.model.Question;
+import com.cybertraining.model.User;
+
+import com.cybertraining.model.Result;
+
+import java.sql.*;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.cybertraining.model.Course;
-import com.cybertraining.model.Question;
-import com.cybertraining.model.User;
-
 public class DatabaseManager {
 
-    private List<User> users = new ArrayList<>();
+    private static final String DB_URL = "jdbc:sqlite:data/auth.db";
+
     private List<Course> courses = new ArrayList<>();
     private Map<Integer, List<Question>> questions = new HashMap<>();
 
     public DatabaseManager() {
-        seedUsers();
+        try {
+            createDataDirIfNeeded();
+            createTables();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
         seedCourses();
         seedQuestions();
     }
 
-    private void seedUsers() {
-
-        users.add(new User(
-                1,
-                "manager",
-                "manager123",
-                "מנהל מערכת",
-                "manager",
-                "הנהלה"
-        ));
-
-        users.add(new User(
-                2,
-                "employee",
-                "1234",
-                "עובד לדוגמה",
-                "employee",
-                "IT"
-        ));
-
-        users.add(new User(
-            3,
-            "Lev",
-            "Lev123",
-            "Lev",
-            "employee",
-            "IT"
-        ));
-
-        users.add(new User(
-            4,
-            "Yaniv",
-            "Yaniv123",
-            "Yaniv",
-            "employee",
-            "IT"
-        ));
-    }
-
-    private void seedCourses() {
-
-        Course course = new Course(
-                1,
-                "יסודות אבטחת מידע",
-                "קורס בסיסי המלמד את עקרונות אבטחת המידע בארגון."
-        );
-
-        courses.add(course);
-    }
-
-    private void seedQuestions() {
-
-        List<Question> list = new ArrayList<>();
-
-        // פישינג
-        list.add(new Question("פישינג (Phishing)", "מה מעורר חשד בהודעת דואר אלקטרוני?", new String[]{"קישור לאתר פנימי", "בקשה לשנות סיסמה באופן דחוף עקב פריצה", "הזמנה לפגישת לוח שנה קבועה", "מייל רשמי ממשאבי אנוש"}, 1));
-        list.add(new Question("פישינג (Phishing)", "מהו Spear Phishing?", new String[]{"מתקפת פישינג ממוקדת ונחקרת על אדם מסוים", "ניסיון לדוג סיסמאות רשת", "תוכנת חומת אש", "מתקפת מניעת שירות"}, 0));
-        list.add(new Question("פישינג (Phishing)", "מה תעשה אם לחצת בטעות על קישור הרסני באימייל?", new String[]{"אתעלם ואמשיך לעבוד", "אאפס את המחשב", "אנתק מהרשת מיד ואדווח לצוות IT", "אעביר למנהל"}, 2));
-        list.add(new Question("פישינג (Phishing)", "Vishing היא מתקפת פישינג באמצעות:", new String[]{"SMS", "שיחת טלפון (קולית)", "דואר פיזי", "צ'אט באתר"}, 1));
-        list.add(new Question("פישינג (Phishing)", "מייל מהמנכ\"ל מבקש העברה כספית מיידית ללא תהליך. מה תעשו?", new String[]{"אאשר מיד כדי שיעריכו אותי", "אעביר חצי מהסכום", "לבדוק מול המנכ\"ל בערוץ אחר (טלפון/פנים אל פנים)", "אענה למייל בבקשת אישור"}, 2));
-        list.add(new Question("פישינג (Phishing)", "כיצד תזהה זיוף כתובת השולח (Spoofing)?", new String[]{"הסמליל שלו לא תקין", "האותיות בכתובת המייל דומות אך שונות (למשל m1crosoft במקום microsoft)", "המייל הגיע בבוקר", "כל התשובות נכונות"}, 1));
-        list.add(new Question("פישינג (Phishing)", "מהו Smishing?", new String[]{"מתקפת פישינג שעוקפת אנטי וירוס", "מתקפת פישינג דרך הודעות קצרות (SMS)", "שימוש ברובוטים לדפי אינטרנט", "סוג של הצפנת קבצים"}, 1));
-
-        // הנדסה חברתית
-        list.add(new Question("הנדסה חברתית", "הנדסה חברתית מסתמכת על:", new String[]{"פסיכולוגיה ותמימות של בני אדם", "קוד תוכנה מורכב", "כוח עיבוד עצום", "חיבור סלולרי בלבד"}, 0));
-        list.add(new Question("הנדסה חברתית", "Tailgating (כניסה במעקב) משמעותה:", new String[]{"מעקב אחר כתובת IP", "סריקת הדפסות במדפסת פתוחה", "מעקב פיזי קרוב לעובד מורשה כדי לעבור דלת מאובטחת", "שכפול כרטיס אשראי"}, 2));
-        list.add(new Question("הנדסה חברתית", "טכנאי מחשבים זר מבקש ממך את הסיסמה ל\"בדיקת המערכת\":", new String[]{"אתן לו את הסיסמה הזמנית", "אסרב בתוקף ואדווח לגורם הרלוונטי", "אתן לו רק אם הוא לובש מדים", "ארשום לו אותה על דף כדי שלא ישמעו אותי"}, 1));
-        list.add(new Question("הנדסה חברתית", "מהו Baiting (פיתיון)?", new String[]{"תוכנה זדונית נסתרת", "הצעת דבר מה מפתה (כמו הבטחה למתנה) תמורת מידע", "פריצה לשרתי החברה", "הדבקה של פסקול מוזיקלי"}, 1));
-        list.add(new Question("הנדסה חברתית", "מישהו טוען בטלפון שהוא מהתמיכה ומבקש שתתקין תוכנה שמטרתה 'לעזור'. מה צעדך?", new String[]{"להתקין מיד כדי לעזור למדד ה-SLA", "לא להתקין כלום, לנתק את השיחה, וליצור קשר עם התמיכה במספר הרשמי", "להעביר את השיחה ללקוח אחר", "לספק לו את יומני המערכת במקום תוכנה"}, 1));
-        list.add(new Question("הנדסה חברתית", "איזה סוג מידע נחפש להסתיר מתוקפי הנדסה חברתית?", new String[]{"מבנה ארגוני בלבד", "קוד פתוח בלבד", "כל מידע שעשוי לבסס אמינות מצדם כלפינו בעתיד", "אין צורך להסתיר דבר"}, 2));
-
-        // סיסמאות והזדהות
-        list.add(new Question("סיסמאות והזדהות", "מהי סיסמה חזקה?", new String[]{"123456", "שם פרטי", "שילוב אותיות (בגודל שונה), מספרים וסימנים מיוחדים", "תאריך לידה"}, 2));
-        list.add(new Question("סיסמאות והזדהות", "האם מומלץ להשתמש באותה סיסמה לכל החשבונות?", new String[]{"כן, קל לזכור", "רק אם היא מעל 12 תווים", "לא. פריצה לאתר אחד תסכן את כל שאר החשבונות שלכם!", "רק באתרי העבודה"}, 2));
-        list.add(new Question("סיסמאות והזדהות", "מה זה MFA (אימות דו/רב-שלבי)?", new String[]{"סיסמה ארוכה במיוחד", "תהליך דרישת אמצעי זיהוי נוסף מעבר לסיסמה (למשל קוד במסרון או אפליקציה)", "חיבור אוטומטי לרשת", "מנגנון עדכוני תוכנה"}, 1));
-        list.add(new Question("סיסמאות והזדהות", "היכן מומלץ לשמור סיסמאות אם קשה לזכור אותן?", new String[]{"קובץ וורד על שולחן העבודה", "מערכת מנהל סיסמאות (Password Manager) בטוחה", "פתק מאחורי המסך", "אפליקציית הפתקים בטלפון (לא מוצפנת)"}, 1));
-        list.add(new Question("סיסמאות והזדהות", "קיבלת התראה על כניסה מחשידה למייל ממדינה זרה שלא היית בה. תגובתך?", new String[]{"לשנות מיד את הסיסמה ולדחות את אישור הכניסה", "להתעלם", "לחסום את התרעות המערכת כי זה מעצבן", "לאשר את הכניסה"}, 0));
-        list.add(new Question("סיסמאות והזדהות", "סיסמת ברירת המחדל לראוטרים, מצלמות רשת או מערכות חדשות:", new String[]{"בטוחה מאוד", "יש להחליף אותה באופן מיידי לאחר ההתקנה", "נטורלית ואין איתה בעיה", "מוגדרת מראש לארגון"}, 1));
-
-        // אבטחה פיזית
-        list.add(new Question("אבטחה פיזית", "מה הפעולה הראשונה שיש לבצע לפני שעוזבים את עמדת המחשב?", new String[]{"כיבוי המסך", "נעילת עמדה (Win+L / Cmd+Ctrl+Q)", "ליציאה משיוך הרשת", "הורדת עוצמת השמע"}, 1));
-        list.add(new Question("אבטחה פיזית", "מדיניות שולחן נקי (Clean Desk Policy) משמעותה:", new String[]{"ניקוי אבק משולחן העבודה העדיף ביום חמישי", "ריצוף השולחן ללא כבלים", "אין להשאיר מסמכי חברה ומידע רגיש גלויים על השולחן בתום העבודה או כשקמים", "סידור אייקונים במסך"}, 2));
-        list.add(new Question("אבטחה פיזית", "מצאת דיסק און קי (USB) בחניון החברה, מה כדאי לעשות?", new String[]{"לחבר למחשב ולבדוק של מי זה", "לפרמט ולהשתמש לצרכים אישיים", "להעביר לצוות אבטחת מידע או לזרוק מבלי לבדוק במחשב", "לשים בקבלה עם שלט"}, 2));
-        list.add(new Question("אבטחה פיזית", "אורח במשרד מבקש להשתמש במחשב שלך 'רק לדקה אחת ממש טובה':", new String[]{"אתן לו בכיף", "אתן לו רק אם אני מסתכל עליו", "אסרב בנימוס ואפנה אותו לעמדת אורחים/IT", "אכנס למשתמש 'אורח' אצלי"}, 2));
-        list.add(new Question("אבטחה פיזית", "הדפסתם מסמך סודי ובסוף אין בו צורך. מה הדרך הנכונה להיפטר ממנו?", new String[]{"לזרוק לפח הרגיל", "לגרוס במגרסת ניירות ייעודית בארגון", "להחזיר למגירה", "להפוך אותו וליצור ממנו דף טיוטה"}, 1));
-        list.add(new Question("אבטחה פיזית", "כיצד תטפל בכך שאדם שאינו תלה תג זיהוי מסתובב במסדרונות אזור מאובטח?", new String[]{"אתעלם", "אעקוב אחריו בשקט", "אפנה אליו בצורה מנומסת ואבקש לברר את זהותו/אלווה לקבלה, או אדווח לקב\"ט", "אצעק עליו"}, 2));
-
-        // תוכנות זדוניות (Malware)
-        list.add(new Question("תוכנות זדוניות", "מהי תוכנת כופר (Ransomware)?", new String[]{"תוכנה המצפינה את הקבצים במחשב ודורשת תשלום כדי לשחררם", "תוכנה שמאיצה ביצועי מחשב על ידי גביית תשלום", "גרסת הדגמה של אנטי וירוס", "תוכנה למשלוח מיילים אוטומטיים"}, 0));
-        list.add(new Question("תוכנות זדוניות", "מהו סוס טרויאני?", new String[]{"וירוס שפוגע רק בחומרת מסכים", "תוכנה זדונית המוסווית כתוכנה לגיטימית ותמימה למראה", "סוג של הצפנת סיסמה ישנה", "פרוטוקול עתיק לניהול רשת"}, 1));
-        list.add(new Question("תוכנות זדוניות", "תוכנות אנטיווירוס יעילות ומגינות בצורה המיטבית רק במידה ו-:", new String[]{"הן לעולם אינן מעודכנות", "הן מותקנות גם בקונסולת משחקים", "החתימות ומסד הנתונים שלהן מעודכנים על בסיס קבוע", "הן כבויות במהלך משחק"}, 2));
-        list.add(new Question("תוכנות זדוניות", "מהו קיילוגר (Keylogger)?", new String[]{"כלי שמקליד אוטומטית ברחבי האינטרנט", "ספריית תוכנה לתרגום", "תוכנה זדונית העוקבת אחר כל הקלדה שלכם על מנת לגנוב סיסמאות וטקסט רגיש", "התקן לפתיחת קבצי מפתח"}, 2));
-        list.add(new Question("תוכנות זדוניות", "במה שונה 'תולעת' (Worm) מוירוס רגיל?", new String[]{"היא קטנה יותר בקוד", "תולעת אינה זקוקה לקובץ מארח או להתערבות המשתמש כדי להתפשט ברשת", "היא פוגעת רק בכונני SSD", "היא לא מזיקה כלל"}, 1));
-        list.add(new Question("תוכנות זדוניות", "אם מופיעה הודעה פתאומית על המסך שאומרת 'מחשבך בסיכון, הורד תוכנה זו לניקוי מיידי!', זה ככל הנראה:", new String[]{"תוכנת Scareware או זדונית שמנסה לגרום לך להוריד אותה", "התרעה אמיתית ממייקרוסופט", "בדיקת חומרה של ספק האינטרנט", "עדכון תקין מהענן"}, 0));
-
-        // גלישה בטוחה
-        list.add(new Question("גלישה בטוחה ורשתות", "מה ניתן לדעת על אתר שמתחיל ב-HTTPS (ויש לו מנעול)?", new String[]{"התקשורת בין המחשב שלך לשרת מוצפנת ומאובטחת בסיסית", "האתר בוודאות לא פוגעני (נגד וירוסים)", "האתר חינמי לגמרי", "האתר ממשלתי"}, 0));
-        list.add(new Question("גלישה בטוחה ורשתות", "חיבור לרשת Wi-Fi ציבורית פתוחה בבית קפה:", new String[]{"הוא הדרך המהירה והבטוחה ביותר לעבוד", "מסוכן מכיוון שמשתמשים אחרים עשויים ליירט את התקשורת שלנו", "מחייב שימוש בפיירוול חיצוני בלבד", "פוגע בסוללת המחשב במהירות כפולה"}, 1));
-        list.add(new Question("גלישה בטוחה ורשתות", "מה תפקידו המרכזי של VPN כשעובדים מרחוק?", new String[]{"להוריד סרטים מהר יותר", "להצפין ולתעל את תקשורת הנתונים כדי לספק גישה מאובטחת לרשת הארגונית", "להתקין מעבד תמלילים פנימי", "לנהל שיחות וידאו באיכות 4K"}, 1));
-        list.add(new Question("גלישה בטוחה ורשתות", "הקפדה על עדכוני תוכנה ומערכת הפעלה היא קריטית משום ש:", new String[]{"היא מחליפה גרפיקה כדי שיהיה מעניין", "היא פועלת לתקן פרצות אבטחה ידועות וחולשות", "היא חובה דרך פקודת מס", "ככה אמרו יצרני המחשבים ללא סיבה"}, 1));
-        list.add(new Question("גלישה בטוחה ורשתות", "שיתוף מידע עסקי רגיש בוואטסאפ או באפליקציות צד ג':", new String[]{"זה דרך מעולה לסגור פינות מהר", "ראוי ומומלץ", "אסור בהחלט אלא אם משתמשים בערוץ המאובטח והמדואר שנקבע על ידי נוהל הארגון", "מותר רק לקבוצות של פחות מ-10 עובדים"}, 2));
-        list.add(new Question("גלישה בטוחה ורשתות", "מדוע חייבים לגבות קבצים בתדירות גבוהה?", new String[]{"זה משחרר זיכרון פנימי במחשב", "כדי לא לאבד מידע יקר במקרה של תקלת חומרה, טעות אנוש, או תקיפת כופרה", "כדי שנוכל להדפיס אותם אחר כך", "לשלוח בקלות לחברים"}, 1));
-
-        // אבטחת מידע וניהול
-        list.add(new Question("ניהול ונהלים", "מהו עיקרון ההרשאה המזערית (Least Privilege)?", new String[]{"הענקת מינימום שכר לעובד", "הענקת הרשאות גישה למערכות ולמידע רק למה שהעובד צריך כדי לבצע את תפקידו, ולא יותר", "צמצום השימוש במחשב לשעתיים ביום", "חסימת יוטיוב בארגון כברירת מחדל"}, 1));
-        list.add(new Question("ניהול ונהלים", "מהו מידע PII (Personally Identifiable Information)?", new String[]{"מתכונים סודיים של הארגון", "מידע פיננסי או מסחרי על הכנסות", "נתונים המאפשרים לזהות אדם באופן אישי (תעודת זהות, כתובת, מספרי אשראי, תיק רפואי)", "רישומי שרת (Logs)"}, 2));
-        list.add(new Question("ניהול ונהלים", "מדיניות BYOD (Bring Your Own Device) פירושה:", new String[]{"מותר להשתמש במכשיר פרטי לעבודה כל עוד פועלים בהתאם להנחיות האבטחה (כגון הפרדת סביבות)", "מותר להביא ציוד מהבית ולהתקין עליו כל תוכנת פריצה", "חובה על הארגון לקנות לעובד הכל", "חל איסור מוחלט על כניסה עם סלולרי לבניין"}, 0));
-        list.add(new Question("ניהול ונהלים", "עובד מגלה שפרויקט חשוב דלף לרשת החיצונית. למי הוא צריך לדווח תחילה?", new String[]{"לכלי התקשורת וחדשות המקומיות", "לרשויות אכיפת החוק", "לגורם הממונה והרלוונטי בארגון (ממונה אבטחת מידע / קב\"ט / מנהל ישיר)", "לצייץ על זה בטוויטר ולהוסיף תיוגים"}, 2));
-        list.add(new Question("ניהול ונהלים", "חשד לאירוע סייבר במחשב שלכם, הפעולה הטובה ביותר היא:", new String[]{"לברר בעצמי את מקור הפריצה ולתפוס את התוקף", "לכבות את המסך וללכת הביתה לקוות שזה יסתדר מחר", "לנתק את הרשת ולדווח ל-IT / סייבר של הארגון בהקדם האפשרי", "לפרמט את המחשב לפני שמישהו ישים לב"}, 2));
-
-        questions.put(1, list);
-    }
-
-    public User authenticate(String username, String password) {
-
-        for (User user : users) {
-
-            if (user.getUsername().equals(username)
-                    && user.getPassword().equals(password)) {
-
-                return user;
+    private void createDataDirIfNeeded() {
+        try {
+            java.nio.file.Path p = java.nio.file.Paths.get("data");
+            if (!java.nio.file.Files.exists(p)) {
+                java.nio.file.Files.createDirectories(p);
             }
+        } catch (Exception ignored) {
+        }
+    }
+
+    private Connection getConnection() throws SQLException {
+        return DriverManager.getConnection(DB_URL);
+    }
+
+    public void createTables() throws SQLException {
+        try (Connection c = getConnection(); Statement s = c.createStatement()) {
+            s.execute("PRAGMA foreign_keys = ON;");
+            s.execute("CREATE TABLE IF NOT EXISTS users ("
+                    + "id INTEGER PRIMARY KEY AUTOINCREMENT,"
+                    + "username TEXT NOT NULL UNIQUE,"
+                    + "password TEXT NOT NULL,"
+                    + "full_name TEXT,"
+                    + "role TEXT,"
+                    + "department TEXT,"
+                    + "created_at INTEGER"
+                    + ");");
+            // results table
+            s.execute("CREATE TABLE IF NOT EXISTS results ("
+                    + "id INTEGER PRIMARY KEY AUTOINCREMENT,"
+                    + "user_id INTEGER NOT NULL,"
+                    + "course_id INTEGER,"
+                    + "score INTEGER NOT NULL,"
+                    + "timestamp INTEGER NOT NULL,"
+                    + "FOREIGN KEY(user_id) REFERENCES users(id)"
+                    + ");");
+            // migrate existing users table if some columns are missing (older DB schema)
+            try (PreparedStatement ps = c.prepareStatement("PRAGMA table_info(users)")) {
+                try (ResultSet rs = ps.executeQuery()) {
+                    java.util.Set<String> cols = new java.util.HashSet<>();
+                    while (rs.next()) cols.add(rs.getString("name"));
+                    if (!cols.contains("full_name")) s.execute("ALTER TABLE users ADD COLUMN full_name TEXT;");
+                    if (!cols.contains("role")) s.execute("ALTER TABLE users ADD COLUMN role TEXT;");
+                    if (!cols.contains("department")) s.execute("ALTER TABLE users ADD COLUMN department TEXT;");
+                    if (!cols.contains("created_at")) s.execute("ALTER TABLE users ADD COLUMN created_at INTEGER;");
+                }
+            }
+            // Normalize existing role values (support Hebrew/English variants)
+            try {
+                // If role contains Hebrew 'מנהל' or English 'admin' -> set to 'manager'
+                s.executeUpdate("UPDATE users SET role = 'manager' WHERE role LIKE '%מנהל%' OR role LIKE '%admin%';");
+                // If role contains Hebrew 'עובד' or is empty/null -> set to 'employee'
+                s.executeUpdate("UPDATE users SET role = 'employee' WHERE role IS NULL OR role = '' OR role LIKE '%עובד%' OR role LIKE '%employee%';");
+            } catch (SQLException ignored) {
+            }
+        }
+    }
+
+    public User registerUser(String username, String password, String fullName, String roleDisplay, String department) {
+        if (username == null || username.trim().isEmpty() || password == null || password.isEmpty()) {
+            return null;
+        }
+
+        // if username already exists, avoid SQL exception and return null
+        try {
+            User existing = getUserByUsername(username);
+            if (existing != null) return null;
+        } catch (Exception ignored) {}
+
+        // normalize role
+        String role = "employee";
+        if (roleDisplay != null && roleDisplay.toLowerCase().contains("מנהל")) role = "manager";
+        if (roleDisplay != null && roleDisplay.toLowerCase().contains("admin")) role = "manager";
+
+        // build INSERT dynamically based on which columns exist in the users table
+        java.util.Set<String> cols = new java.util.HashSet<>();
+        try (Connection c = getConnection(); PreparedStatement ps = c.prepareStatement("PRAGMA table_info(users)", Statement.RETURN_GENERATED_KEYS)) {
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) cols.add(rs.getString("name"));
+            }
+
+            java.util.List<String> insertCols = new java.util.ArrayList<>();
+            insertCols.add("username");
+            insertCols.add("password");
+            if (cols.contains("full_name")) insertCols.add("full_name");
+            if (cols.contains("role")) insertCols.add("role");
+            if (cols.contains("department")) insertCols.add("department");
+            if (cols.contains("created_at")) insertCols.add("created_at");
+
+            StringBuilder sql = new StringBuilder("INSERT INTO users(");
+            sql.append(String.join(",", insertCols));
+            sql.append(") VALUES(");
+            sql.append(String.join(",", java.util.Collections.nCopies(insertCols.size(), "?")));
+            sql.append(")");
+
+            try (PreparedStatement ins = c.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS)) {
+                int idx = 1;
+                ins.setString(idx++, username);
+                ins.setString(idx++, password);
+                if (cols.contains("full_name")) ins.setString(idx++, fullName);
+                if (cols.contains("role")) ins.setString(idx++, role);
+                if (cols.contains("department")) ins.setString(idx++, department);
+                if (cols.contains("created_at")) ins.setLong(idx++, Instant.now().getEpochSecond());
+
+                ins.executeUpdate();
+                try (ResultSet keys = ins.getGeneratedKeys()) {
+                    if (keys.next()) {
+                        int id = keys.getInt(1);
+                        return new User(id, username, password, fullName, role, department);
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            // log SQL error to help debugging (unique constraint or other DB issues)
+            e.printStackTrace();
+            return null;
         }
 
         return null;
+    }
+
+    public User authenticate(String username, String password) {
+        // Deprecated - use getUserByUsername + BCrypt in AuthenticationService
+        return null;
+    }
+
+    public User getUserByUsername(String username) {
+        String sql = "SELECT * FROM users WHERE username = ? LIMIT 1";
+        try (Connection c = getConnection(); PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setString(1, username);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    ResultSetMetaData md = rs.getMetaData();
+                    java.util.Set<String> present = new java.util.HashSet<>();
+                    for (int i = 1; i <= md.getColumnCount(); i++) present.add(md.getColumnName(i));
+                    int id = rs.getInt("id");
+                    String user = rs.getString("username");
+                    String pass = rs.getString("password");
+                    String full = present.contains("full_name") ? rs.getString("full_name") : "";
+                    String role = present.contains("role") ? rs.getString("role") : "employee";
+                    String dept = present.contains("department") ? rs.getString("department") : "";
+                    return new User(id, user, pass, full, role, dept);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public User getUserById(int id) {
+        String sql = "SELECT * FROM users WHERE id = ? LIMIT 1";
+        try (Connection c = getConnection(); PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    ResultSetMetaData md = rs.getMetaData();
+                    java.util.Set<String> present = new java.util.HashSet<>();
+                    for (int i = 1; i <= md.getColumnCount(); i++) present.add(md.getColumnName(i));
+                    String user = rs.getString("username");
+                    String pass = rs.getString("password");
+                    String full = present.contains("full_name") ? rs.getString("full_name") : "";
+                    String role = present.contains("role") ? rs.getString("role") : "employee";
+                    String dept = present.contains("department") ? rs.getString("department") : "";
+                    return new User(id, user, pass, full, role, dept);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public User authenticate(String username, String password, String roleDisplay) {
+        // roleDisplay is ignored for now; keep backward compatible
+        return authenticate(username, password);
     }
 
     public List<Course> getCourses() {
@@ -156,8 +217,223 @@ public class DatabaseManager {
         return questions.get(courseId);
     }
 
-    public void createTables() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'createTables'");
+    public List<Result> getResults() {
+        List<Result> out = new ArrayList<>();
+        String sql = "SELECT id, user_id, course_id, score, timestamp FROM results ORDER BY timestamp DESC";
+        try (Connection c = getConnection(); PreparedStatement ps = c.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                int userId = rs.getInt("user_id");
+                int courseId = rs.getInt("course_id");
+                int score = rs.getInt("score");
+                long ts = rs.getLong("timestamp");
+                User u = getUserById(userId);
+                Course course = null;
+                for (Course cr : courses) if (cr.getId() == courseId) course = cr;
+                Result r = new Result(u, course, score);
+                // override timestamp
+                try {
+                    java.lang.reflect.Field f = Result.class.getDeclaredField("timestamp");
+                    f.setAccessible(true);
+                    f.setLong(r, ts);
+                } catch (Exception ignored) {}
+                out.add(r);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return out;
     }
+
+    public void saveResult(Result result) {
+        String sql = "INSERT INTO results(user_id, course_id, score, timestamp) VALUES(?,?,?,?)";
+        try (Connection c = getConnection(); PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setInt(1, result.getUser() != null ? result.getUser().getId() : 0);
+            ps.setInt(2, result.getCourse() != null ? result.getCourse().getId() : 0);
+            ps.setInt(3, result.getScore());
+            ps.setLong(4, result.getTimestamp());
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public int getUserCount() {
+        try (Connection c = getConnection(); Statement s = c.createStatement(); ResultSet rs = s.executeQuery("SELECT COUNT(*) AS c FROM users")) {
+            if (rs.next()) return rs.getInt("c");
+        } catch (SQLException ignored) {
+        }
+        return 0;
+    }
+
+    // Dashboard metrics methods
+    public double getAverageScoreForCourse(int courseId) {
+        String sql = "SELECT AVG(score) AS avg_score FROM results WHERE course_id = ?";
+        try (Connection c = getConnection(); PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setInt(1, courseId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return rs.getDouble("avg_score");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 0.0;
+    }
+
+    public int getCompletionRateForCourse(int courseId) {
+        // percentage of users who have any result for this course
+        String sql = "SELECT COUNT(DISTINCT user_id) AS c FROM results WHERE course_id = ?";
+        int usersWithResults = 0;
+        try (Connection c = getConnection(); PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setInt(1, courseId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) usersWithResults = rs.getInt("c");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        int total = getUserCount();
+        if (total == 0) return 0;
+        return (int) Math.round((usersWithResults * 100.0) / total);
+    }
+
+    public int countHighRiskEmployees(int courseId, int threshold) {
+        // count users whose latest score for this course is below threshold
+        String sql = "SELECT user_id, MAX(timestamp) as ts FROM results WHERE course_id = ? GROUP BY user_id";
+        int count = 0;
+        try (Connection c = getConnection(); PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setInt(1, courseId);
+            try (ResultSet rs = ps.executeQuery()) {
+                java.util.List<Integer> users = new java.util.ArrayList<>();
+                while (rs.next()) users.add(rs.getInt("user_id"));
+                for (Integer uid : users) {
+                    // get latest score for uid
+                    String q = "SELECT score FROM results WHERE course_id = ? AND user_id = ? ORDER BY timestamp DESC LIMIT 1";
+                    try (PreparedStatement ps2 = c.prepareStatement(q)) {
+                        ps2.setInt(1, courseId);
+                        ps2.setInt(2, uid);
+                        try (ResultSet rs2 = ps2.executeQuery()) {
+                            if (rs2.next()) {
+                                int s = rs2.getInt("score");
+                                if (s < threshold) count++;
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return count;
+    }
+
+    public int getMonthlyProgressPercent(int courseId) {
+        // compute percent change between current month average and previous month average
+        java.time.ZoneId zid = java.time.ZoneId.systemDefault();
+        java.time.LocalDate now = java.time.LocalDate.now(zid);
+        java.time.LocalDate firstOfThis = now.withDayOfMonth(1);
+        java.time.LocalDate firstOfPrev = firstOfThis.minusMonths(1);
+        long thisStart = firstOfThis.atStartOfDay(zid).toEpochSecond();
+        long prevStart = firstOfPrev.atStartOfDay(zid).toEpochSecond();
+
+        String sql = "SELECT AVG(score) AS avg_score FROM results WHERE course_id = ? AND timestamp >= ?";
+        double thisAvg = 0.0;
+        try (Connection c = getConnection(); PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setInt(1, courseId);
+            ps.setLong(2, thisStart);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) thisAvg = rs.getDouble("avg_score");
+            }
+        } catch (SQLException ignored) {}
+
+        double prevAvg = 0.0;
+        String sql2 = "SELECT AVG(score) AS avg_score FROM results WHERE course_id = ? AND timestamp >= ? AND timestamp < ?";
+        try (Connection c = getConnection(); PreparedStatement ps = c.prepareStatement(sql2)) {
+            ps.setInt(1, courseId);
+            ps.setLong(2, prevStart);
+            ps.setLong(3, thisStart);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) prevAvg = rs.getDouble("avg_score");
+            }
+        } catch (SQLException ignored) {}
+
+        if (prevAvg == 0) return 0;
+        return (int) Math.round(((thisAvg - prevAvg) / prevAvg) * 100.0);
+    }
+
+    public java.util.List<Result> getLatestResultsForCourse(int courseId, int limit) {
+        java.util.List<Result> out = new java.util.ArrayList<>();
+        String sql = "SELECT user_id, score, timestamp FROM results WHERE course_id = ? ORDER BY timestamp DESC LIMIT ?";
+        try (Connection c = getConnection(); PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setInt(1, courseId);
+            ps.setInt(2, limit);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    int uid = rs.getInt("user_id");
+                    int score = rs.getInt("score");
+                    long ts = rs.getLong("timestamp");
+                    User u = getUserById(uid);
+                    Course course = null;
+                    for (Course cr : courses) if (cr.getId() == courseId) course = cr;
+                    Result r = new Result(u, course, score);
+                    try {
+                        java.lang.reflect.Field f = Result.class.getDeclaredField("timestamp");
+                        f.setAccessible(true);
+                        f.setLong(r, ts);
+                    } catch (Exception ignored) {}
+                    out.add(r);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return out;
+    }
+
+    private void seedCourses() {
+        Course course = new Course(
+                1,
+                "יסודות אבטחת מידע",
+                "קורס בסיסי המלמד את עקרונות אבטחת המידע בארגון."
+        );
+
+        courses.add(course);
+    }
+
+    private void seedQuestions() {
+        // Try to load questions from data/questions.json (JSON array of objects)
+        java.nio.file.Path qpath = java.nio.file.Paths.get("data/questions.json");
+        if (java.nio.file.Files.exists(qpath)) {
+            try {
+                String json = new String(java.nio.file.Files.readAllBytes(qpath), java.nio.charset.StandardCharsets.UTF_8);
+                // Use Gson to parse the JSON into a helper class
+                com.google.gson.Gson gson = new com.google.gson.Gson();
+                QuestionEntry[] entries = gson.fromJson(json, QuestionEntry[].class);
+                List<Question> list = new ArrayList<>();
+                for (QuestionEntry e : entries) {
+                    String[] ans = e.answers != null ? e.answers : new String[]{"א", "ב", "ג", "ד"};
+                    int idx = e.correctIndex >= 0 && e.correctIndex < ans.length ? e.correctIndex : 0;
+                    list.add(new Question(e.category, e.question, ans, idx));
+                }
+                questions.put(1, list);
+                return;
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                // fall through to default seed
+            }
+        }
+
+        // Fallback single example question if JSON not available or parsing failed
+        List<Question> list = new ArrayList<>();
+        list.add(new Question("פישינג (Phishing)", "מה מעורר חשד בהודעת דואר אלקטרוני?", new String[]{"קישור לאתר פנימי", "בקשה לשנות סיסמה באופן דחוף עקב פריצה", "הזמנה לפגישת לוח שנה קבועה", "מייל רשמי ממשאבי אנוש"}, 1));
+        questions.put(1, list);
+    }
+
+    // Helper class for JSON parsing
+    private static class QuestionEntry {
+        String category;
+        String question;
+        String[] answers;
+        int correctIndex;
+    }
+
 }

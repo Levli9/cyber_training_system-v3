@@ -5,11 +5,13 @@ public class Result {
     private User user;
     private Course course;
     private int score;
+    private long timestamp;
 
     public Result(User user, Course course, int score) {
         this.user = user;
         this.course = course;
         this.score = score;
+        this.timestamp = System.currentTimeMillis();
     }
 
     public User getUser() {
@@ -22,6 +24,10 @@ public class Result {
 
     public int getScore() {
         return score;
+    }
+
+    public long getTimestamp() {
+        return timestamp;
     }
 
     public boolean isPassed() {

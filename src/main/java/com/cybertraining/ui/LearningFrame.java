@@ -37,8 +37,10 @@ public class LearningFrame extends JFrame {
 
         GradientPanel bg = new GradientPanel(AppTheme.BG, AppTheme.BG2);
         bg.setLayout(new BorderLayout());
+        bg.setComponentOrientation(java.awt.ComponentOrientation.RIGHT_TO_LEFT);
 
         JPanel header = new JPanel(new BorderLayout());
+        header.setComponentOrientation(java.awt.ComponentOrientation.RIGHT_TO_LEFT);
         header.setOpaque(false);
         header.setBorder(new EmptyBorder(15, 15, 15, 15));
 
@@ -63,10 +65,12 @@ public class LearningFrame extends JFrame {
         bg.add(header, BorderLayout.NORTH);
 
         JPanel centerPanel = new JPanel(new BorderLayout());
+        centerPanel.setComponentOrientation(java.awt.ComponentOrientation.RIGHT_TO_LEFT);
         centerPanel.setOpaque(false);
         centerPanel.setBorder(new EmptyBorder(10, 40, 20, 40));
 
         contentArea = new JEditorPane();
+        contentArea.setComponentOrientation(java.awt.ComponentOrientation.RIGHT_TO_LEFT);
         contentArea.setContentType("text/html");
         contentArea.setEditable(false);
         contentArea.setBackground(AppTheme.CARD);
@@ -74,6 +78,7 @@ public class LearningFrame extends JFrame {
         contentArea.setBorder(new EmptyBorder(30, 30, 30, 30));
 
         JScrollPane scroll = new JScrollPane(contentArea);
+        scroll.setComponentOrientation(java.awt.ComponentOrientation.RIGHT_TO_LEFT);
         scroll.setBorder(AppTheme.cardPanel().getBorder());
         scroll.setBackground(AppTheme.BG);
         scroll.getViewport().setBackground(AppTheme.CARD);
@@ -82,15 +87,18 @@ public class LearningFrame extends JFrame {
         bg.add(centerPanel, BorderLayout.CENTER);
 
         JPanel nav = new JPanel(new BorderLayout());
+        nav.setComponentOrientation(java.awt.ComponentOrientation.RIGHT_TO_LEFT);
         nav.setOpaque(false);
         nav.setBorder(new EmptyBorder(10, 40, 30, 40));
 
         progressLabel = new JLabel();
+        progressLabel.setHorizontalAlignment(SwingConstants.RIGHT);
         progressLabel.setForeground(AppTheme.MUTED);
         progressLabel.setFont(AppTheme.TEXT_FONT);
         progressLabel.setHorizontalAlignment(SwingConstants.CENTER);
         
         JPanel buttonsPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 0));
+        buttonsPanel.setComponentOrientation(java.awt.ComponentOrientation.RIGHT_TO_LEFT);
         buttonsPanel.setOpaque(false);
 
         prev = AppTheme.secondaryButton("שקף קודם");

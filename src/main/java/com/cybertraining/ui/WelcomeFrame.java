@@ -1,8 +1,10 @@
 package com.cybertraining.ui;
 
 import java.awt.Component;
+import java.awt.ComponentOrientation;
 import java.awt.Dimension;
 import java.awt.GridBagLayout;
+import java.awt.GridBagConstraints;
 
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -23,8 +25,9 @@ public class WelcomeFrame extends JFrame {
         setLocationRelativeTo(null);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
 
-        GradientPanel bg = new GradientPanel(AppTheme.BG,AppTheme.BG2);
+        BackgroundPanel bg = new BackgroundPanel(AppTheme.DEFAULT_BACKGROUND_RESOURCE);
         bg.setLayout(new GridBagLayout());
+        bg.setComponentOrientation(ComponentOrientation.RIGHT_TO_LEFT);
 
         JPanel card = AppTheme.cardPanel();
         card.setLayout(new BoxLayout(card,BoxLayout.Y_AXIS));
@@ -42,33 +45,38 @@ public class WelcomeFrame extends JFrame {
         sub.setAlignmentX(Component.CENTER_ALIGNMENT);
         sub.setHorizontalAlignment(SwingConstants.CENTER);
 
-        JButton employee = AppTheme.primaryButton("כניסת עובד");
-        JButton manager = AppTheme.secondaryButton("כניסת מנהל");
+        // Buttons according to new flow: Register / Login
+        JButton register = AppTheme.primaryButton("הרשמה");
+        JButton login = AppTheme.primaryButton("התחברות");
 
-        employee.setAlignmentX(Component.CENTER_ALIGNMENT);
-        manager.setAlignmentX(Component.CENTER_ALIGNMENT);
-        employee.setMaximumSize(new Dimension(260, 44));
-        manager.setMaximumSize(new Dimension(260, 44));
+        register.setAlignmentX(Component.CENTER_ALIGNMENT);
+        login.setAlignmentX(Component.CENTER_ALIGNMENT);
+        register.setMaximumSize(new Dimension(260, 56));
+        login.setMaximumSize(new Dimension(260, 56));
 
-        employee.addActionListener(e->{
-            new LoginFrame(db,false).setVisible(true);
+        register.addActionListener(e -> {
+            new RegistrationFrame(db).setVisible(true);
             dispose();
         });
 
-        manager.addActionListener(e->{
-            new LoginFrame(db,true).setVisible(true);
+        login.addActionListener(e -> {
+            new RoleSelectionScreen(db).setVisible(true);
             dispose();
         });
 
         card.add(title);
-        card.add(Box.createVerticalStrut(16));
+        card.add(Box.createVerticalStrut(12));
         card.add(sub);
-        card.add(Box.createVerticalStrut(32));
-        card.add(employee);
-        card.add(Box.createVerticalStrut(16));
-        card.add(manager);
+        card.add(Box.createVerticalStrut(24));
+        card.add(register);
+        card.add(Box.createVerticalStrut(12));
+        card.add(login);
 
-        bg.add(card);
-        add(bg);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridx = 0; gbc.gridy = 0; gbc.fill = GridBagConstraints.NONE; gbc.anchor = GridBagConstraints.CENTER; gbc.weightx = 1.0; gbc.weighty = 1.0;
+        bg.add(card, gbc);
+        setContentPane(bg);
+        // Apply RTL to all components to ensure Hebrew aligns correctly
+        AppTheme.applyRTL(this);
     }
 }

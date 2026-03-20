@@ -45,7 +45,7 @@ public class EmployeeHomeFrame extends JFrame {
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
         card.setPreferredSize(new Dimension(480, 280));
 
-        JLabel welcome = new JLabel("<html><center>שלום, <span style='color: #FF2A7A;'><b>" + user.getName() + "</b></span> 👋</center></html>");
+        JLabel welcome = new JLabel("<html><center>שלום, <span style='color: #00E6FF;'><b>" + user.getName() + "</b></span> 👋</center></html>");
         welcome.setForeground(AppTheme.TEXT);
         welcome.setFont(AppTheme.TITLE);
         welcome.setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -86,5 +86,6 @@ public class EmployeeHomeFrame extends JFrame {
         bg.add(centerPanel, BorderLayout.CENTER);
 
         add(bg);
+        AppTheme.applyRTL(this);
     }
 }

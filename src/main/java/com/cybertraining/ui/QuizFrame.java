@@ -38,6 +38,7 @@ public class QuizFrame extends JFrame {
     private JLabel questionLabel;
     private JRadioButton[] options;
     private ButtonGroup group;
+    private JLabel[] optionLabels;
 
     public QuizFrame(DatabaseManager db, User user){
 
@@ -53,8 +54,10 @@ public class QuizFrame extends JFrame {
 
         GradientPanel bg = new GradientPanel(AppTheme.BG, AppTheme.BG2);
         bg.setLayout(new BorderLayout());
+        bg.setComponentOrientation(java.awt.ComponentOrientation.RIGHT_TO_LEFT);
 
         JPanel header = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 15));
+        header.setComponentOrientation(java.awt.ComponentOrientation.RIGHT_TO_LEFT);
         header.setOpaque(false);
         JButton backButton = AppTheme.backButton("← יציאה מהמבחן");
         backButton.addActionListener(e -> {
@@ -63,18 +66,26 @@ public class QuizFrame extends JFrame {
         });
         header.add(backButton);
         bg.add(header, BorderLayout.NORTH);
+        // add drifting glow on the right side for attention
+        AnimatedGlow qglow = new AnimatedGlow(AppTheme.ACCENT);
+        qglow.setPreferredSize(new Dimension(140, 180));
+        bg.add(qglow, BorderLayout.EAST);
 
         JPanel centerPanel = new JPanel(new GridBagLayout());
+        centerPanel.setComponentOrientation(java.awt.ComponentOrientation.RIGHT_TO_LEFT);
         centerPanel.setOpaque(false);
 
         JPanel card = AppTheme.cardPanel();
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
+        card.setComponentOrientation(java.awt.ComponentOrientation.RIGHT_TO_LEFT);
         card.setPreferredSize(new Dimension(750, 480));
 
         title = new JLabel("מבחן הסמכה");
         title.setFont(AppTheme.TITLE);
         title.setForeground(AppTheme.TEXT);
         title.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        title.setHorizontalAlignment(SwingConstants.CENTER);
 
         categoryLabel = new JLabel();
         categoryLabel.setFont(new Font("Avenir Next", Font.BOLD, 14));
@@ -90,26 +101,50 @@ public class QuizFrame extends JFrame {
         questionLabel.setFont(AppTheme.SUBTITLE);
         questionLabel.setForeground(AppTheme.TEXT);
         questionLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        questionLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        questionLabel.setHorizontalAlignment(SwingConstants.RIGHT);
 
         options = new JRadioButton[4];
+        optionLabels = new JLabel[4];
         group = new ButtonGroup();
-
         JPanel optionsPanel = new JPanel();
         optionsPanel.setLayout(new BoxLayout(optionsPanel, BoxLayout.Y_AXIS));
         optionsPanel.setOpaque(false);
-        optionsPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        optionsPanel.setBorder(BorderFactory.createEmptyBorder(20, 0, 20, 0));
+        optionsPanel.setAlignmentX(Component.RIGHT_ALIGNMENT);
 
-        for(int i = 0; i < 4; i++){
+        for (int i = 0; i < 4; i++) {
             options[i] = new JRadioButton();
             options[i].setFont(AppTheme.TEXT_FONT);
             options[i].setForeground(AppTheme.TEXT);
             options[i].setOpaque(false);
             options[i].setFocusPainted(false);
             options[i].setCursor(new Cursor(Cursor.HAND_CURSOR));
+            options[i].setText(""); // icon only
+            options[i].setComponentOrientation(java.awt.ComponentOrientation.LEFT_TO_RIGHT);
             group.add(options[i]);
-            optionsPanel.add(options[i]);
-            optionsPanel.add(Box.createVerticalStrut(10));
+
+            optionLabels[i] = new JLabel();
+            optionLabels[i].setFont(AppTheme.TEXT_FONT);
+            optionLabels[i].setForeground(AppTheme.TEXT);
+            optionLabels[i].setHorizontalAlignment(SwingConstants.RIGHT);
+            optionLabels[i].setVerticalAlignment(SwingConstants.CENTER);
+            optionLabels[i].setOpaque(false);
+            // enforce a wider width so Hebrew phrases wrap at word boundaries, not mid-word
+            optionLabels[i].setPreferredSize(new Dimension(480, 36));
+            optionLabels[i].setMaximumSize(new Dimension(480, 400));
+
+            // row: radio on the RIGHT (first) and label to its LEFT — so Hebrew text starts at the right edge
+            JPanel row = new JPanel(new java.awt.BorderLayout());
+            row.setOpaque(false);
+            row.setAlignmentX(Component.RIGHT_ALIGNMENT);
+            // place the radio at the right side
+            row.add(options[i], java.awt.BorderLayout.EAST);
+            // label fills remaining space and is right-aligned; add right padding so it doesn't touch the radio
+            optionLabels[i].setBorder(new javax.swing.border.EmptyBorder(0,0,0,12));
+            row.add(optionLabels[i], java.awt.BorderLayout.CENTER);
+
+            optionsPanel.add(row);
+            optionsPanel.add(Box.createVerticalStrut(8));
         }
 
         JPanel actionsPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 0));
@@ -119,11 +154,25 @@ public class QuizFrame extends JFrame {
         skipButton.setPreferredSize(new Dimension(160, 44));
         skipButton.addActionListener(e -> skip());
 
+        JButton finishButton = AppTheme.secondaryButton("סיים מבחן");
+        finishButton.setPreferredSize(new Dimension(160, 44));
+        finishButton.addActionListener(e -> {
+            int opt = javax.swing.JOptionPane.showConfirmDialog(
+                    QuizFrame.this,
+                    "אתה בטוח שברצונך לסיים את המבחן עכשיו?",
+                    "אישור סיום מבחן",
+                    javax.swing.JOptionPane.YES_NO_OPTION);
+            if (opt == javax.swing.JOptionPane.YES_OPTION) {
+                finishExam();
+            }
+        });
+
         JButton nextButton = AppTheme.primaryButton("שאלה הבאה");
         nextButton.setPreferredSize(new Dimension(160, 44));
         nextButton.addActionListener(e -> next());
 
         actionsPanel.add(skipButton);
+        actionsPanel.add(finishButton);
         actionsPanel.add(nextButton);
 
         card.add(Box.createVerticalStrut(10));
@@ -133,7 +182,13 @@ public class QuizFrame extends JFrame {
         card.add(Box.createVerticalStrut(20));
         card.add(questionLabel);
         card.add(Box.createVerticalStrut(10));
-        card.add(optionsPanel);
+        // wrap optionsPanel in a right-aligned container so the whole block is flush to the right
+        JPanel optionsWrapper = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+        optionsWrapper.setOpaque(false);
+        optionsPanel.setAlignmentX(Component.RIGHT_ALIGNMENT);
+        optionsPanel.setPreferredSize(new Dimension(420, optionsPanel.getPreferredSize().height));
+        optionsWrapper.add(optionsPanel);
+        card.add(optionsWrapper);
         card.add(Box.createVerticalStrut(15));
         card.add(actionsPanel);
 
@@ -173,8 +228,12 @@ public class QuizFrame extends JFrame {
         
         String[] ans = q.getAnswers();
         for(int i = 0; i < 4; i++){
-            options[i].setText(ans[i]);
-            options[i].setForeground(AppTheme.TEXT); // Reset text color on skip/next
+            String safe = ans[i] != null ? ans[i] : "";
+            // preserve words and let the label wrap naturally at word boundaries
+            String html = "<html><div dir='rtl' style='text-align:right; white-space:normal; word-break:normal; overflow-wrap:normal;'>" + safe + "</div></html>";
+            optionLabels[i].setText(html);
+            options[i].setSelected(false);
+            options[i].setForeground(AppTheme.TEXT);
         }
     }
 
@@ -184,6 +243,13 @@ public class QuizFrame extends JFrame {
             loadQuestion();
             group.clearSelection();
         } else {
+            // save result to DB so dashboard can reflect it
+            com.cybertraining.model.Course course = null;
+            java.util.List<com.cybertraining.model.Course> courses = db.getCourses();
+            if (courses != null && !courses.isEmpty()) course = courses.get(0);
+            com.cybertraining.model.Result res = new com.cybertraining.model.Result(user, course, quiz.getScore());
+            db.saveResult(res);
+            // open result screen
             new ResultFrame(db, user, quiz.getScore()).setVisible(true);
             dispose();
         }
@@ -213,5 +279,17 @@ public class QuizFrame extends JFrame {
             new ResultFrame(db, user, quiz.getScore()).setVisible(true);
             dispose();
         }
+    }
+
+    private void finishExam() {
+        // Persist current state and score to DB and show result
+        int score = quiz.getScore();
+        com.cybertraining.model.Course course = null;
+        java.util.List<com.cybertraining.model.Course> courses = db.getCourses();
+        if (courses != null && !courses.isEmpty()) course = courses.get(0);
+        com.cybertraining.model.Result res = new com.cybertraining.model.Result(user, course, score);
+        db.saveResult(res);
+        new ResultFrame(db, user, score).setVisible(true);
+        dispose();
     }
 }

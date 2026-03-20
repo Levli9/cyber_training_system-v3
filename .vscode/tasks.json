@@ -1,0 +1,19 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Compile and Run",
+            "type": "shell",
+            "command": "mkdir -p target/classes && javac -d target/classes -sourcepath src/main/java src/main/java/com/cybertraining/Main.java && java -cp target/classes:src/main/resources com.cybertraining.Main",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
+            "problemMatcher": []
+        }
+    ]
+}
